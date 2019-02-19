@@ -71,6 +71,9 @@ namespace PhongLightingApp
 
 		GLuint m_normal = {};         // normal buffer
 
+		// Initial position of the cube in the scene. Can be useful if we will need to return to it.
+		const glm::vec4 m_posInitial;
+
 		// Material for the scene items.
 		MaterialPhong m_material;
 

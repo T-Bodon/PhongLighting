@@ -46,7 +46,7 @@ int APIENTRY _tWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstanc
 
 		OpenGLInfo openGLInfo(OpenGLVersionMajor, OpenGLVersionMinor, FOV, FrustumNear, FrustumFar);
 
-		glm::vec3 cameraPosition = { 0.0f, 0.0f, -5.0f };
+		glm::vec3 cameraPosition = { 0.0f, 0.0f, -4.0f };
 
 		// Initial scale factor for the camera.
 		const GLfloat CameraScale = 1.0f;

@@ -2,16 +2,7 @@
 #pragma debug(on)
 #pragma optimize(off)
 
-//layout(location = 0) uniform vec3 ambientFactor;
-
-layout(location = 1) uniform vec3 lightDiffuse;
-layout(location = 2) uniform vec3 lightSpecular;
-layout(location = 3) uniform float lightIntensity;
 layout(location = 4) uniform vec3 lightPosition;
-
-//layout(location = 5) uniform vec3 materialDiffuse;
-//layout(location = 6) uniform vec3 materialSpecular;
-//layout(location = 7) uniform vec3 materialShininess;
 
 layout(location = 8)  uniform mat4 modelView;
 layout(location = 9)  uniform mat4 view;
@@ -26,15 +17,13 @@ out vec3 viewVector;
 
 void main(void) 
 {
-	vec4 viewPos = modelView * pos;
+	vec4 viewPos = modelView * vec4(pos, 1.0);
 
-	normalVector = mat3(modelView) * normal;
+	normalVector = normalize(mat3(modelView) * normal);
 
-	lightVector = lightPosition - viewPos.xyz;
+	lightVector = normalize(lightPosition - viewPos.xyz);
 
-	viewVector = -viewPos.xyz;
+	viewVector = normalize(-viewPos.xyz);
 
 	gl_Position = projection * viewPos;
-
-	//gl_Position = vec4(pos.x, pos.y, pos.z, 1.0);
 }

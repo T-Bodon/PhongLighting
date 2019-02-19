@@ -13,8 +13,12 @@ Scene::Scene(const glm::vec3& backgroundColor, CameraPtr& spCamera, GLuint progr
 	: m_backgroundColor(backgroundColor), m_spCamera(spCamera), m_programId(programId), 
 	  m_ambientColor(glm::vec3(1.0f)), 
 	  m_ambientIntensity(0.2f),
-	  m_light(glm::vec3(1.0f), glm::vec3(1.0f), 1.0f, glm::vec3(0.0f, 0.9f, 0.0f)),
-	  m_material(glm::vec3(0.0f, 0.0f, 1.0f), glm::vec3(0.0f, 0.0f, 1.0f), glm::vec3(0.0f, 0.0f, 1.0f), 128.0f),
+	  m_light(
+		glm::vec3(1.0f), 
+		glm::vec3(1.0f), 
+		0.9f, 
+		glm::vec3(2.0f, 0.0f, -2.0f)),    // diagonally located light
+	  m_material(glm::vec3(0.0f, 0.0f, 1.0f), glm::vec3(0.0f, 0.0f, 1.0f), glm::vec3(0.0f, 0.0f, 1.0f), 256.0f),
 	  m_ambientFactor(m_ambientColor * m_ambientIntensity * m_material.m_ambient)
 {
 }
@@ -23,6 +27,11 @@ Scene::~Scene()
 {
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+
+	if (0 != m_normal)
+	{
+		glDeleteBuffers(1, &m_normal);
+	}
 
 	if (0 != m_index)
 	{
@@ -68,28 +77,62 @@ bool Scene::initializeContents()
 
 	// Set up the vertex buffer.
 
-	std::vector<GLfloat> vertices = {
+	// Cube dimensions.
+	const GLfloat Side = 1.0f;
+	const GLfloat HalfSide = Side / 2.0f;
+
+	// Cube's position: the origin.
+	glm::vec3 pos;
+
+	GLfloat vertices[] = {
 #if 0
 		// A triangle.
-		-0.90f, -0.90f, 0.0f,
+		- 0.90f, -0.90f, 0.0f,
 		0.85f, -0.90f, 0.0f,
 		-0.90f, 0.85f, 0.0f
 #else
 		// A cube.
-		 0.9f, -0.9f, -0.9f,
-		 0.9f, -0.9f,  0.9f,
-		-0.9f, -0.9f,  0.9f, 
-		-0.9f, -0.9f, -0.9f,
-		 0.9f,  0.9f, -0.9f,
-		 0.9f,  0.9f,  0.9f,
-		-0.9f,  0.9f,  0.9f, 
-		-0.9f,  0.9f, -0.9f
+
+		// Front
+		pos.x - HalfSide, pos.y - HalfSide, pos.z + HalfSide,
+		pos.x + HalfSide, pos.y - HalfSide, pos.z + HalfSide,
+		pos.x + HalfSide, pos.y + HalfSide, pos.z + HalfSide,
+		pos.x - HalfSide, pos.y + HalfSide, pos.z + HalfSide,
+
+#if 1
+		// Right
+		pos.x + HalfSide, pos.y - HalfSide, pos.z + HalfSide,
+		pos.x + HalfSide, pos.y - HalfSide, pos.z - HalfSide,
+		pos.x + HalfSide, pos.y + HalfSide, pos.z - HalfSide,
+		pos.x + HalfSide, pos.y + HalfSide, pos.z + HalfSide,
+		// Back
+		pos.x - HalfSide, pos.y - HalfSide, pos.z - HalfSide,
+		pos.x - HalfSide, pos.y + HalfSide, pos.z - HalfSide,
+		pos.x + HalfSide, pos.y + HalfSide, pos.z - HalfSide,
+		pos.x + HalfSide, pos.y - HalfSide, pos.z - HalfSide,
+		// Left
+		pos.x - HalfSide, pos.y - HalfSide, pos.z + HalfSide,
+		pos.x - HalfSide, pos.y + HalfSide, pos.z + HalfSide,
+		pos.x - HalfSide, pos.y + HalfSide, pos.z - HalfSide,
+		pos.x - HalfSide, pos.y - HalfSide, pos.z - HalfSide,
+		// Bottom
+		pos.x - HalfSide, pos.y - HalfSide, pos.z + HalfSide,
+		pos.x - HalfSide, pos.y - HalfSide, pos.z - HalfSide,
+		pos.x + HalfSide, pos.y - HalfSide, pos.z - HalfSide,
+		pos.x + HalfSide, pos.y - HalfSide, pos.z + HalfSide,
+		// Top
+		pos.x - HalfSide, pos.y + HalfSide, pos.z + HalfSide,
+		pos.x + HalfSide, pos.y + HalfSide, pos.z + HalfSide,
+		pos.x + HalfSide, pos.y + HalfSide, pos.z - HalfSide,
+		pos.x - HalfSide, pos.y + HalfSide, pos.z - HalfSide
+#endif
+
 #endif
 	};
 
 	glGenBuffers(1, &m_vbo);
 	glBindBuffer(GL_ARRAY_BUFFER, m_vbo);
-	glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(vertices[0]), &vertices[0], GL_STATIC_DRAW);
+	glBufferData(GL_ARRAY_BUFFER, _countof(vertices) * sizeof(vertices[0]), vertices, GL_STATIC_DRAW);
 
 	// Fill in the vertex position attribute.
 	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, BUFFER_OFFSET(0));
@@ -97,54 +140,80 @@ bool Scene::initializeContents()
 
 	// Set up the index buffer.
 
-	std::vector<GLuint> indices = {
+	GLuint indices[] = {
 #if 0
 		// A triangle.
-		0, 1, 2 
+		0, 1, 2
 #else
 		// A cube.
-		1, 3, 0,
-		7, 5, 4,
-		4, 1, 0,
-		5, 2, 1,
-		2, 7, 3,
-		0, 7, 4,
-		1, 2, 3,
-		7, 6, 5,
-		4, 5, 1,
-		5, 6, 2,
-		2, 6, 7,
-		0, 3, 7
+		0, 1, 2,
+		0, 2, 3,
+#if 1
+		4, 5, 6, 4, 6, 7,
+		8, 9, 10, 8, 10, 11,
+		12, 13, 14, 12, 14, 15,
+		16, 17, 18, 16, 18, 19,
+		20, 21, 22, 20, 22, 23
+#endif
+
 #endif
 	};
 
-	m_indexCount = indices.size();
+	m_indexCount = _countof(indices);
 
 	glGenBuffers(1, &m_index);
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_index);
-	glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices.size() * sizeof(indices[0]), &indices[0], GL_STATIC_DRAW);
+	glBufferData(GL_ELEMENT_ARRAY_BUFFER, m_indexCount * sizeof(indices[0]), indices, GL_STATIC_DRAW);
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 
-	glBindBuffer(GL_ARRAY_BUFFER, 0);
+	//glBindBuffer(GL_ARRAY_BUFFER, 0);
 
 	// Set up the normal buffer.
 #if 1
-	std::vector<GLfloat> normals = {
-		 0.0f, -1.0f,  0.0f, 
-		 0.0f,  1.0f,  0.0f,
-		 1.0f, -0.0f,  0.0f,
-		 0.0f, -0.0f,  1.0f, 
-		-1.0f, -0.0f, -0.0f, 
-		 0.0f,  0.0f, -1.0f
+	GLfloat normals[] = {
+		// Front
+		0.0f, 0.0f, 1.0f,
+		0.0f, 0.0f, 1.0f,
+		0.0f, 0.0f, 1.0f,
+		0.0f, 0.0f, 1.0f,
+#if 1
+		// Right
+		1.0f, 0.0f, 0.0f,
+		1.0f, 0.0f, 0.0f,
+		1.0f, 0.0f, 0.0f,
+		1.0f, 0.0f, 0.0f,
+		// Back
+		0.0f, 0.0f, -1.0f,
+		0.0f, 0.0f, -1.0f,
+		0.0f, 0.0f, -1.0f,
+		0.0f, 0.0f, -1.0f,
+		// Left
+		-1.0f, 0.0f, 0.0f,
+		-1.0f, 0.0f, 0.0f,
+		-1.0f, 0.0f, 0.0f,
+		-1.0f, 0.0f, 0.0f,
+		// Bottom
+		0.0f, -1.0f, 0.0f,
+		0.0f, -1.0f, 0.0f,
+		0.0f, -1.0f, 0.0f,
+		0.0f, -1.0f, 0.0f,
+		// Top
+		0.0f, 1.0f, 0.0f,
+		0.0f, 1.0f, 0.0f,
+		0.0f, 1.0f, 0.0f,
+		0.0f, 1.0f, 0.0f
+#endif
 	};
 
 	glGenBuffers(1, &m_normal);
 	glBindBuffer(GL_ARRAY_BUFFER, m_normal);
-	glBufferData(GL_ARRAY_BUFFER, normals.size() * sizeof(normals[0]), &normals[0], GL_STATIC_DRAW);
+	glBufferData(GL_ARRAY_BUFFER, _countof(normals) * sizeof(normals[0]), &normals[0], GL_STATIC_DRAW);
 
 	// Fill in the normal attribute.
 	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 0, BUFFER_OFFSET(0));
 	glEnableVertexAttribArray(1);
+
+	glBindBuffer(GL_ARRAY_BUFFER, 0);
 #endif
 
 	updateUniforms();
@@ -157,10 +226,6 @@ void Scene::updateUniforms() const
 	ATLASSERT(m_programId);
 
 	glUseProgram(m_programId);
-
-	// TODO:
-	//     1) comment out the uniforms you don't need.
-	//     2) correct the uniform locations if required.
 
 	// Pre-calculated ambient factor for the material.
 	glUniform3fv(0, 1, glm::value_ptr(m_ambientFactor));
@@ -176,7 +241,8 @@ void Scene::updateUniforms() const
 	glUniform3fv(6, 1, glm::value_ptr(m_material.m_specular));
 	glUniform1f(7, m_material.m_shininess);
 
-#if 1
+	// Model-View and other matrices.
+
 	glm::mat4 modelView = m_spCamera->getModelViewMatrix();
 
 	glUniformMatrix4fv(8, 1, GL_FALSE, glm::value_ptr(modelView));
@@ -193,8 +259,6 @@ void Scene::updateUniforms() const
 	//glm::mat3 normal = glm::mat3(glm::vec3(mv[0]), glm::vec3(mv[1]), glm::vec3(mv[2]));
 
 	glUniformMatrix3fv(2, 1, GL_FALSE, glm::value_ptr(normal));
-#endif
-
 #endif
 
 	glUseProgram(0);
@@ -238,6 +302,8 @@ void Scene::render() const
 	ATLASSERT(m_programId);
 
 	updateUniforms();
+
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 	glUseProgram(m_programId);
 	glBindVertexArray(m_vao);
