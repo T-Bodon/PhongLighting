@@ -19,7 +19,9 @@ Scene::Scene(const glm::vec3& backgroundColor, CameraPtr& spCamera, GLuint progr
 		0.9f, 
 		glm::vec3(2.0f, 0.0f, -2.0f)),    // diagonally located light
 	  m_material(glm::vec3(0.0f, 0.0f, 1.0f), glm::vec3(0.0f, 0.0f, 1.0f), glm::vec3(0.0f, 0.0f, 1.0f), 256.0f),
-	  m_ambientFactor(m_ambientColor * m_ambientIntensity * m_material.m_ambient)
+	  m_ambientFactor(m_ambientColor * m_ambientIntensity * m_material.m_ambient),
+	  m_triangle(glm::vec3(), 0.93f),
+	  m_cube(glm::vec3(), 0.7f)
 {
 }
 
@@ -310,7 +312,11 @@ void Scene::render() const
 	glBindBuffer(GL_ARRAY_BUFFER, m_vbo);
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_index);
 
-	glDrawElements(GL_TRIANGLES, m_indexCount, GL_UNSIGNED_INT, 0);
+	//glDrawElements(GL_TRIANGLES, m_indexCount, GL_UNSIGNED_INT, 0);
+
+	//m_triangle.render();
+
+	m_cube.render();
 
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 	glBindBuffer(GL_ARRAY_BUFFER, 0);

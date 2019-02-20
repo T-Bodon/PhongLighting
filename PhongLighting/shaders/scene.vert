@@ -24,6 +24,7 @@ void main(void)
 	lightVector = normalize(lightPosition - viewPos.xyz);
 
 	viewVector = normalize(-viewPos.xyz);
-
+	
 	gl_Position = projection * viewPos;
+	//gl_Position = vec4(pos, 1.0);
 }

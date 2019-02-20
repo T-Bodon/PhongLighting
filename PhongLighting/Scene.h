@@ -79,5 +79,10 @@ namespace PhongLightingApp
 
 		// Ambient factor for the Phong lighting.
 		const glm::vec3 m_ambientFactor;
+
+		// A triangle primitive.
+		CommonLibOgl::Triangle m_triangle;
+
+		CommonLibOgl::Cube m_cube;
 	};
 }
